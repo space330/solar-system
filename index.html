@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>太阳系八大星球 3D 粒子交互模型</title>
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="scene-wrap" aria-label="太阳系三维模型">
+        <canvas id="solar-canvas"></canvas>
+        <div class="hud top-left">
+          <div class="brand">SOLAR PARTICLE LAB</div>
+          <h1>太阳系八大星球</h1>
+          <p id="focus-summary">拖拽旋转视角，滚轮或双指捏合缩放，点击星球查看科普信息。</p>
+        </div>
+        <div class="hud top-right compact" id="status-panel">
+          <span class="status-dot"></span>
+          <span id="control-status">轨道巡航中</span>
+        </div>
+        <div class="scene-ai-annotation" id="scene-ai-annotation" hidden>
+          <div class="annotation-line" id="annotation-line"></div>
+          <div class="annotation-card">
+            <div class="annotation-kicker">AI 可视化标注</div>
+            <h2 id="annotation-title">当前星球</h2>
+            <p id="annotation-summary"></p>
+            <ul id="annotation-points"></ul>
+          </div>
+        </div>
+        <div class="gesture-card" id="gesture-card" hidden>
+          <video id="gesture-video" autoplay playsinline muted></video>
+          <canvas id="gesture-canvas"></canvas>
+          <div class="gesture-readout">
+            <span id="gesture-name">等待手势</span>
+            <span id="gesture-hint">手掌左右移动旋转，靠近/远离缩放</span>
+          </div>
+        </div>
+      </section>
+
+      <aside class="control-panel" id="control-panel" aria-label="模型控制台" aria-hidden="true" inert>
+        <div class="drawer-header">
+          <div>
+            <span>导航菜单</span>
+            <strong>模型控制台</strong>
+          </div>
+          <button class="drawer-close" id="close-control-menu" type="button" aria-label="关闭导航菜单">×</button>
+        </div>
+        <div class="panel-section focused-world">
+          <div class="planet-chip" id="planet-chip">太阳</div>
+          <h2 id="planet-name">恒星核心</h2>
+          <p id="planet-fact">太阳占据太阳系绝大部分质量，它的引力让八大行星沿各自轨道运行。</p>
+          <div class="metric-grid">
+            <div>
+              <span>轨道半径</span>
+              <strong id="planet-distance">0 AU</strong>
+            </div>
+            <div>
+              <span>公转周期</span>
+              <strong id="planet-period">-</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <div class="section-title">驾驶控制</div>
+          <div class="toolbar">
+            <button class="icon-button active" id="toggle-motion" title="播放/暂停轨道" aria-label="播放/暂停轨道">
+              <span>▶</span>
+            </button>
+            <button class="icon-button" id="reset-view" title="重置视角" aria-label="重置视角">
+              <span>⌂</span>
+            </button>
+            <button class="icon-button active" id="toggle-labels" title="显示/隐藏标签" aria-label="显示/隐藏标签">
+              <span>名</span>
+            </button>
+            <button class="icon-button" id="toggle-solo" title="单个星球展示" aria-label="单个星球展示">
+              <span>单</span>
+            </button>
+            <button class="icon-button" id="toggle-gesture" title="开启摄像头手势识别" aria-label="开启摄像头手势识别">
+              <span>手</span>
+            </button>
+          </div>
+          <label class="range-row">
+            <span>时间流速</span>
+            <input id="speed-range" type="range" min="0" max="4" step="0.01" value="1.15" />
+          </label>
+          <label class="range-row">
+            <span>粒子亮度</span>
+            <input id="glow-range" type="range" min="0.35" max="1.9" step="0.01" value="1" />
+          </label>
+          <label class="toggle-row">
+            <span>轨道网格</span>
+            <input id="orbit-toggle" type="checkbox" checked />
+          </label>
+        </div>
+
+        <div class="panel-section">
+          <div class="section-title">快速定位</div>
+          <div class="planet-list" id="planet-list"></div>
+        </div>
+
+        <div class="panel-section guide">
+          <div class="section-title">操作手势</div>
+          <div class="gesture-grid">
+            <span>拖拽</span><strong>环绕观察 / 单体旋转</strong>
+            <span>滚轮</span><strong>连续缩放</strong>
+            <span>双指</span><strong>捏合缩放</strong>
+            <span>手掌</span><strong>挥动旋转，远近缩放</strong>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <button class="nav-menu-button" id="open-control-menu" type="button" aria-controls="control-panel" aria-expanded="false">
+      <span></span>
+      <span></span>
+      <span></span>
+      <strong>菜单</strong>
+    </button>
+    <div class="drawer-backdrop" id="drawer-backdrop" hidden></div>
+
+    <div class="ai-companion" id="ai-companion">
+      <section class="ai-chat-window" id="ai-chat-window" hidden aria-label="AI 科普问答窗口">
+        <div class="ai-chat-header">
+          <div class="ai-chat-identity">
+            <div class="mini-oracle" aria-hidden="true">
+              <span class="mini-oracle-face"></span>
+            </div>
+            <div>
+              <h2>星云 AI 助手</h2>
+              <span>太阳系科普问答</span>
+              <small class="ai-model-line" id="ai-model-line">当前模型：等待连接</small>
+            </div>
+          </div>
+          <div class="ai-chat-tools">
+            <button class="ai-tool-button" id="open-api-key-panel" type="button">Key</button>
+            <button class="ai-tool-button" id="close-ai-chat" type="button" aria-label="关闭 AI 问答窗口">×</button>
+          </div>
+        </div>
+        <div class="ai-answer" id="ai-answer">点击右下角小精灵即可向 AI 提问。选择星球后，我会结合当前星球补充科普信息。</div>
+        <label class="ai-query ai-chat-query">
+          <span>向 AI 提问</span>
+          <textarea id="ai-question" rows="3" placeholder="例如：火星表面是什么样的？"></textarea>
+        </label>
+        <button class="ai-submit" id="ai-ask" type="button">生成回答</button>
+      </section>
+
+      <button class="ai-sprite-button" id="ai-chat-toggle" type="button" aria-label="打开 AI 科普助手" aria-expanded="false">
+        <span class="sprite-halo"></span>
+        <span class="sprite-head">
+          <span class="sprite-hair left"></span>
+          <span class="sprite-hair right"></span>
+          <span class="sprite-horn left"></span>
+          <span class="sprite-horn right"></span>
+          <span class="sprite-face">
+            <span class="sprite-eye left"></span>
+            <span class="sprite-eye right"></span>
+            <span class="sprite-mouth"></span>
+          </span>
+        </span>
+        <span class="sprite-label">AI</span>
+      </button>
+    </div>
+
+    <div class="modal-layer" id="api-key-modal" hidden>
+      <div class="modal-backdrop" id="api-key-backdrop"></div>
+      <section class="api-key-modal" role="dialog" aria-modal="true" aria-labelledby="api-key-title">
+        <div class="modal-title-row">
+          <h2 id="api-key-title">API Key 管理</h2>
+          <button class="modal-close" id="close-api-key-panel" type="button" aria-label="关闭 API Key 管理">×</button>
+        </div>
+        <div class="api-key-box">
+          <label class="ai-query">
+            <span>模型服务</span>
+            <select id="ai-provider">
+              <option value="deepseek">DeepSeek</option>
+              <option value="qwen">通义千问 / DashScope</option>
+              <option value="custom">自定义 OpenAI 兼容接口</option>
+            </select>
+          </label>
+          <label class="ai-query">
+            <span>API Endpoint</span>
+            <input id="ai-base-url" type="url" autocomplete="off" placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1" />
+          </label>
+          <label class="ai-query">
+            <span>模型名称</span>
+            <input id="ai-model-name" type="text" autocomplete="off" placeholder="qwen-plus" />
+          </label>
+          <label class="ai-query">
+            <span>API Key</span>
+            <input id="ai-api-key" type="password" autocomplete="off" placeholder="输入 API Key，仅发送到本机后端" />
+          </label>
+          <div class="api-key-actions">
+            <button class="ai-submit" id="ai-save-key" type="button">保存配置</button>
+            <button class="ai-submit secondary" id="ai-verify-key" type="button">验证 Key</button>
+          </div>
+          <div class="api-key-status" id="api-key-status">未连接后端时会使用离线知识库。</div>
+        </div>
+      </section>
+    </div>
+
+    <script src="./src/app.js" defer></script>
+  </body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "solar-system-particle-model",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "check": "C:\\Progra~1\\nodejs\\node.exe --check server.mjs && C:\\Progra~1\\nodejs\\node.exe --check server/AIService.mjs && C:\\Progra~1\\nodejs\\node.exe --check server/ApiKeyStore.mjs && C:\\Progra~1\\nodejs\\node.exe --check src/app.js && C:\\Progra~1\\nodejs\\node.exe --check src/compat.js && C:\\Progra~1\\nodejs\\node.exe --check src/renderer.js && C:\\Progra~1\\nodejs\\node.exe --check workers/particle-worker.js",
+    "health": "C:\\Progra~1\\nodejs\\node.exe tools/health-check.mjs"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
